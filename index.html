@@ -26,9 +26,97 @@
     pre { background: #000; color: #fff; padding: 15px;}
     hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
     .footer { text-align:center; padding-top:30px; font-style: italic; }
-   textarea#code { border-color: #aaa; padding: 0.5em }
+   textarea { border-color: #aaa; padding: 0.5em }
   </style>
 </head>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+
+<script type="text/javascript">
+  function test1(fn) {
+    var f1 = false, f2 = false, done = false;
+    fn(
+      function(done) { f1 = true; done(); },
+      function(done) { f2 = true; done(); }
+    ).then(
+      function() { done = true; result('test1', f1 && f2); }
+    );
+   
+    setTimeout(function() { if (!done) error('test1', 'Timeout (500ms elapsed without done being called)'); }, 500);
+  }
+
+  function test2(fn) {
+    var f1 = false, f2 = false, done = false;
+    fn(
+      function(done) { 
+        setTimeout(function() { f1 = true; done(); }, 250);
+      },
+      function(done) {
+        setTimeout(function() { f2 = true; done(); }, 175);
+      }
+    ).then(
+      function() { done = true; result('test2', f1 && f2); }
+    );
+
+    setTimeout(function() { if (!done) error('test2', 'Timeout (500ms elapsed without done being called)'); }, 500);
+  }
+
+  function test3(fn) {
+    var f1 = false, f2 = false, f3 = false, done = false;
+    fn(
+      function(done) { 
+        setTimeout(function() { f1 = true; done(); }, 250);
+      },
+      function(done) {
+        setTimeout(function() { f2 = true; done(); }, 175);
+      },
+      function(done) {
+        setTimeout(function() { f3 = true; done(); }, 25);
+      }
+    ).then(
+      function() { done = true; result('test3', f1 && f2 && f3); }
+    );
+
+    setTimeout(function() { if (!done) error('test3', 'Timeout (500ms elapsed without done being called)'); }, 500);
+  }
+
+  function result(name, passed) {
+    var passFail = passed ? 'Passed' : 'FAILED!';
+    $('#results').text($('#results').text()  + name + ': ' + passFail + '\n')
+  }
+  function error(name, err) {
+    $('#results').text($('#results').text()  + name + ': ERR: ' + err + '\n')
+  }
+ 
+  $(document).ready(function() {
+    $('#test').click(function() { 
+      eval($('#code').val());
+
+      $('#results').text('');
+      if (typeof(async_wait) == 'function') {      
+        try {
+          test1(async_wait);
+        } catch (err) {
+          error('test1', err);
+        }
+        try {
+          test2(async_wait);
+        } catch (err) {
+          error('test2', err);
+        }
+        try {
+          test3(async_wait);
+        } catch (err) {
+          error('test3', err);
+        }
+      } else {
+        $('#results').text('No function named async_wait found');
+      }
+
+      return false;
+    });
+  });
+</script>
 
 <body>
   <a href="https://github.com/alexblack/async-wait"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
@@ -48,32 +136,44 @@
       
     </div>
 
-    
-
-    
-
-    
-
-    
-
-    
       <h2>Contact</h2>
-      <p>Alex Black (alex@sortable.com)<br/>      </p>
+      <p><a href="http://twitter.com/waterlooalex">Waterlooalex</a></p>
 
       <h2>Test your code</h2>
-      <textarea id="code" rows="15" cols="80"></textarea>
-      <a class="btn" href="#">Test</a>
+      <textarea id="code" rows="15" cols="80">
+function async_wait() {
+  return {
+    then: function(done) {      
+    }
+  };    
+}
+      </textarea>
+      <a id="test" class="btn" href="#">Test</a>
 
-    <h2>Download</h2>
+      <h3>Results</h3>
+      <textarea id="results" rows="5" cols="80"></textarea>
+
+
+    <h2>Instructions</h2>
     <p>
-      You can download this project in either
-      <a href="https://github.com/alexblack/async-wait/zipball/master">zip</a> or
-      <a href="https://github.com/alexblack/async-wait/tarball/master">tar formats.
+      Write a method called <b>async_wait</b>, that takes any number of arguments, each of which is an asynchronous function that takes a callback as an argument to call when they are done.
     </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/alexblack/async-wait</pre>
-    </p>
+    <p><b>async_wait</b> should return an object with a method <b>then(fn)</b> which takes as a parameter a function to execute when the asychronous functions are done.
+    <h3>Example usage</h3>
+    <pre>
+    async_wait(
+      function(callback) {
+        // do async stuff, tell them when we are done
+        callback();        
+      },
+      function(callback) {
+        // do async stuff, tell them when we are done
+        callback();        
+      }
+    ).then(
+      function() { alert('all done!'); }
+    );  
+    </pre>
 
     <div class="footer">
       get the source code on GitHub : <a href="https://github.com/alexblack/async-wait">alexblack/async-wait</a>
